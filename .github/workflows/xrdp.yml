@@ -1,4 +1,4 @@
-name: HenCoders Xrdp
+name: Setup RDP on Linux Runner with LocalTunnel (Persistent with Logs)
 
 on:
   workflow_dispatch:
@@ -48,7 +48,20 @@ jobs:
         echo "LocalTunnel URL:" >> rdp-credentials.txt
         cat lt-url.txt >> rdp-credentials.txt
 
-    - name: Display Credentials and LocalTunnel URL
+    - name: Display Initial Credentials and Start Periodic Logging
       run: |
         echo "=== RDP Login Details ==="
         cat rdp-credentials.txt
+
+        # Log the details every 5 minutes
+        for i in {1..5}
+        do
+          echo "HenCoders Active - Log #$i"
+          cat rdp-credentials.txt
+          sleep 300  # Wait for 5 minutes before printing again
+        done
+
+    - name: Keep Workflow Running
+      run: |
+        # Prevent the workflow from completing
+        tail -f /dev/null
