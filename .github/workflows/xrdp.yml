@@ -30,7 +30,7 @@ jobs:
     - name: Install FRP Client
       run: |
         # Download and extract the latest version of FRP
-        wget https://github.com/fatedier/frp/releases/latest/download/frp_linux_amd64.tar.gz
+        wget https://github.com/fatedier/frp/releases/download/v0.61.0/frp_0.61.0_linux_amd64.tar.gz
         tar -xzf frp_linux_amd64.tar.gz
         sudo mv frp_*_linux_amd64 /usr/local/frp
 
