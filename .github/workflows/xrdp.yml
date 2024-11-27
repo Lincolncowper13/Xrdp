@@ -1,4 +1,4 @@
-name: Setup RDP on Linux Runner with LocalTunnel (Persistent with Logs)
+name: Setup RDP on Linux Runner with FRP
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Update and Install XRDP
+    - name: Install XRDP and Desktop Environment
       run: |
         sudo apt-get update
         sudo apt-get install -y xrdp xfce4 xfce4-terminal
@@ -27,39 +27,38 @@ jobs:
         echo "Username: $USERNAME" > rdp-credentials.txt
         echo "Password: $PASSWORD" >> rdp-credentials.txt
 
-    - name: Install Node.js and LocalTunnel
+    - name: Install FRP Client
       run: |
-        curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-        sudo apt-get install -y nodejs
-        sudo npm install -g localtunnel
+        wget https://github.com/fatedier/frp/releases/latest/download/frp_0.51.3_linux_amd64.tar.gz
+        tar -xzf frp_0.51.3_linux_amd64.tar.gz
+        sudo mv frp_0.51.3_linux_amd64 /usr/local/frp
 
-    - name: Start LocalTunnel for RDP and Get Tunnel Password
+    - name: Configure FRP Client
       run: |
-        # Start LocalTunnel in the background
-        lt --port 3389 --subdomain rdp-access > lt-url.txt &
-        sleep 5
+        # Create FRP client config
+        cat <<EOF > /usr/local/frp/frpc.ini
+        [common]
+        server_addr = <FRP_SERVER_IP>
+        server_port = 7000
 
-        # Retrieve the LocalTunnel IP-based password
-        TUNNEL_PASSWORD=$(curl -s https://loca.lt/mytunnelpassword)
+        [rdp]
+        type = tcp
+        local_ip = 127.0.0.1
+        local_port = 3389
+        remote_port = 6000
+        EOF
 
-        # Log credentials and tunnel details
-        echo "=== RDP Credentials ===" >> rdp-credentials.txt
-        echo "Tunnel Password: $TUNNEL_PASSWORD" >> rdp-credentials.txt
-        echo "LocalTunnel URL:" >> rdp-credentials.txt
-        cat lt-url.txt >> rdp-credentials.txt
+        # Log tunnel details
+        echo "FRP Tunnel Address: <FRP_SERVER_IP>:6000" >> rdp-credentials.txt
 
-    - name: Display Initial Credentials and Start Periodic Logging
+    - name: Start FRP Client
+      run: |
+        /usr/local/frp/frpc -c /usr/local/frp/frpc.ini &
+
+    - name: Display RDP Credentials
       run: |
         echo "=== RDP Login Details ==="
         cat rdp-credentials.txt
-
-        # Log the details every 5 minutes
-        for i in {1..5}
-        do
-          echo "HenCoders Active - Log #$i"
-          cat rdp-credentials.txt
-          sleep 300  # Wait for 5 minutes before printing again
-        done
 
     - name: Keep Workflow Running
       run: |
