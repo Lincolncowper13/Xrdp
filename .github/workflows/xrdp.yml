@@ -1,0 +1,48 @@
+name: HenCoders Xrdp
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-rdp:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Update and Install XRDP
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xrdp xfce4 xfce4-terminal
+        sudo systemctl enable xrdp
+        echo xfce4-session >~/.xsession
+        sudo systemctl restart xrdp
+
+    - name: Set Username and Generate Random Password
+      run: |
+        # Set username as 'root' and generate random password
+        PASSWORD=$(openssl rand -base64 12)
+        echo "root:$PASSWORD" | sudo chpasswd
+
+        # Log credentials to a file
+        echo "Username: root" > rdp-credentials.txt
+        echo "Password: $PASSWORD" >> rdp-credentials.txt
+
+    - name: Install Node.js
+      run: |
+        curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+
+    - name: Install LocalTunnel
+      run: |
+        sudo npm install -g localtunnel
+
+    - name: Start LocalTunnel for RDP
+      run: |
+        lt --port 3389 --subdomain rdp-access > lt-url.txt &
+        sleep 5
+
+    - name: Display Credentials and LocalTunnel URL
+      run: |
+        echo "=== RDP Login Details ==="
+        cat rdp-credentials.txt
+        echo "=== LocalTunnel URL ==="
+        cat lt-url.txt
